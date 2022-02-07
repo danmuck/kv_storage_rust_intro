@@ -5,10 +5,11 @@ fn main() {
     let mut arguments = std::env::args().skip(1);
     let key = arguments.next().expect("\n\t[Err! No key found!\n ");
     let value = arguments.next().unwrap();
-    println!("  New Key Compared with Database...\n  Key value updated successfully -- \n\tKey:\t {} \n\tValue:\t {} \n", key, value);
+    println!("  New Key Compared with Database...\n  Key value updated successfully -- \n\tKey:\t {} \n\tValue:\t {} \n", key.to_uppercase(), value);
     let mut database = Database::new().expect("\n\t[Err! Database::new() -> creating database failed]\n  ");
-    database.insert(key.to_uppercase(), value.clone());
-    database.insert(key, value);
+    // database.insert(key.to_uppercase(), value.clone());
+    database.insert(key.to_uppercase(), value);
+
     database.flush_meth().unwrap();
     }
 
