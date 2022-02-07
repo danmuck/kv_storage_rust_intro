@@ -1,1 +1,4 @@
-{hello: dude} 
+NEW_KEY	new_value
+new_key	new_value
+KEY	value
+key	value

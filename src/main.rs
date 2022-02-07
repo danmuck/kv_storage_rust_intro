@@ -13,11 +13,18 @@ fn main() {
     // let contents = format!("{} \t{} \n", key, value);
     // std::fs::write("kv.db", contents).unwrap();
     
-    let database = Database::new().expect("\n\t[Err! Database::new() -> crashed]\n  ");
+    let mut database = Database::new().expect("\n\t[Err! Database::new() -> creating database failed]\n  ");
     // database.insert(key, value);  //syntactic sugar for below line
     // Database::insert(database, key, value);
+    // .clone() to borrow the value and return back its new owned version of the value
+    database.insert(key.to_uppercase(), value.clone());
     database.insert(key, value);
-
+    database.flush_meth().unwrap();
+    // println!("The value was {}", value);
+    
+    // This will not work because by using (self) instead of (&self) in the flush() function,
+    //      it becomes the last step in the ownership cycle therefore it cannot be called again.
+    // database.insert(String::from("WoW_"), String::from("Wooo_"));
 
     // long way to write it
     // let write_result = std::fs::write("kv.db", contents).unwrap();
@@ -41,6 +48,7 @@ impl Database {
             Take a string from the file,
                 take each line which contains (key, value) and split them into respective variables
         */
+
         // 1. read kv.db file 
         // let contents = match std::fs::read_to_string("kv.db") {
         //     Ok(content) => content,
@@ -56,7 +64,6 @@ impl Database {
             // let (key, value) = line.split_once('\t').expect("Corrupt database");
             // let pair = line.split_once('\t').expect("\n\t[Err! Database -> corrupt]\n ");
             // split at the '\t' character into 2 chunks (which are also iterators)
-            let mut map = HashMap::new();
             let mut chunks = line.splitn(2, '\t');
             // crash the program if there is no key or value
             let key = chunks.next().expect("\n\t[Err! No Key!]\n ");
@@ -75,11 +82,73 @@ impl Database {
         }
         // 2. parse the string 
         // 3. populate our map
-        Ok(Database { map: map })
+
+        // normally Ok(Database { map: map }) but because map shares the same name in both places,
+        //      it can be shortened slightly (borrowed from JavaScript)
+        Ok(Database { map })
     }
     // METHODS are differentiated from FUNCTIONS with passing SELF
-    fn insert(mut self, key: String, value: String) {
+    // &mut is a mutable reference
+    fn insert(&mut self, key: String, value: String) {
         self.map.insert(key, value);
 
     }
+
+
+    // moved to the impl Drop for Database but it can be called explicitly as well
+    fn flush_meth(self) -> std::io::Result<()> {
+        /*
+            This function flushes the database and writes it to a file.
+
+            By flushing the database Rust can safely release all of its
+                borrows while they are in turn, written to a file on disk.
+
+        */
+        flush_func(&self)
+        // // create a string buffer with all keys/values and then write that to disk
+        // let mut string_buffer = String::new();
+
+        // // for pairs in &self.map {
+        // //     let key = pairs.0;
+        // //     let value = pairs.1;
+        // //     let kv_pair = format!("{}\t{}\n", key, value);
+        // //     // push_buffer = push_buffer + &kv_pair;
+        // //     // requires the &reference
+        // //     string_buffer.push_str(&kv_pair);
+        // // }
+        // // more efficient way to do the same thing
+        // for (key, value) in &self.map {
+        //     // let kv_pair = format!("{}\t{}\n", key, value);
+        //     string_buffer.push_str(key);
+        //     string_buffer.push('\t');
+        //     string_buffer.push_str(&value);
+        //     string_buffer.push('\n');
+        //     // these 4 lines do what the following line does, with more efficiency because
+        //     //      we are no longer storing values in a temporary variable
+        //     // key does not need &key because key is already a reference
+        //     // string_buffer.push_str(&kv_pair);
+        // }
+        // std::fs::write("kv.db", string_buffer)
+
+
+        // // todo!("Finish this method")
+    }
+}
+
+impl Drop for Database {
+
+    fn drop(&mut self) { 
+        let _ = flush_func(self);
+    }
+}
+
+fn flush_func(database: &Database) -> std::io::Result<()> {
+    let mut string_buffer = String::new();
+    for (key, value) in &database.map {
+            string_buffer.push_str(key);
+            string_buffer.push('\t');
+            string_buffer.push_str(&value);
+            string_buffer.push('\n');
+    }
+    std::fs::write("kv.db", string_buffer)
 }
