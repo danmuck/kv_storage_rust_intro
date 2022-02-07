@@ -1,4 +1,8 @@
+# Notes from watching the two part video series: https://youtu.be/WnWGO-tLtLA by Ryan Levick
+
+
 use std::{collections::HashMap};
+
 
 fn main() {
 
